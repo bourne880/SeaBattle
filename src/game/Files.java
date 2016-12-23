@@ -14,13 +14,20 @@ import java.util.Collections;
 
 // includes static methods to operate on files
 public class Files {
+	private static File dir; // the directory in which game files will be stored
 	private static File save; // path to file with save game
 	private static File scores;  // path to txt file with best scores
 	private static File cData; // path to txt file with connection data;
 	
 	static {
-		save = new File("files/save.sb");
-		scores = new File("files/scores.txt");
+		dir = new File("files");
+		save = new File(dir, "save.sb");
+		scores = new File(dir, "scores.txt");
+		
+		if (!dir.exists()) // create directory if doesn't exist
+			try {
+				dir.mkdir(); 
+			} catch (Exception ex) { }
 	}
 	
 	// given GameState and draw of gameplay, writes gameplay to save
