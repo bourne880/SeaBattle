@@ -29,6 +29,8 @@ public class DeployerC extends PlayerDeployer {
 				}
 			}
 			
+			optionalAction();
+			
 			// sleep thread to make room for another
 			try {
 				Thread.sleep(50);
@@ -44,6 +46,11 @@ public class DeployerC extends PlayerDeployer {
 	// returns true/false whether click position differs from recent (did player made a click move)
 	private boolean keyCTempTest() {
 		return pBoard.getKeyC() == keyCTemp;
+	}
+	
+	// no optional action
+	protected void optionalAction() {
+
 	}
 		
 }

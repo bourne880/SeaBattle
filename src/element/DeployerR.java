@@ -44,6 +44,8 @@ public class DeployerR extends PlayerDeployer {
 				horizontalTemp = pBoard.getHorizontal(); // update horizontalTemp
 			}
 			
+			optionalAction();
+			
 			// sleep thread to make room for another
 			try {
 				Thread.sleep(50);
@@ -72,4 +74,9 @@ public class DeployerR extends PlayerDeployer {
 		return positionsTemp;
 	}
 
+	// no optional action
+	protected void optionalAction() {
+
+	}
+	
 }

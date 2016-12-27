@@ -12,19 +12,19 @@ import run.SinglePlayerGame;
 import java.util.ArrayList;
 import javax.swing.JOptionPane;
 
-
-
 // initializes gui and state, starts the game with single player game
 // listens to player's action from Menu and performs tasks according to player's choices:
 // - executes runs (before that, interrupts previous run and brings back board and menu to default state)
 // - saves or loads game
 // - displays best scores
+// - establishes connection and enables communication (for multi player game)
 public class GameExecutor implements Runnable {
 	private GUI gui;
 	private Menu menu;
 	private GameState state;
 	private static final Integer[] DEPLOY_ARRAY = { 5, 4, 3, 2, 1 }; //size and order of ships for players to deploy
 	private boolean indicatorTemp; // recent value of indicator (Menu)
+	private Connection connection;
 	private ThreadGroup run;
 	
 	public GameExecutor() {
@@ -60,6 +60,8 @@ public class GameExecutor implements Runnable {
 							setupMenu();
 							
 							state = new GameState();
+							establishConnection();
+							enableCommunication();
 							mRun();
 						}
 						break;
@@ -124,7 +126,6 @@ public class GameExecutor implements Runnable {
 			} catch (Exception ex) { }
 		
 		// close connection if not closed
-		Connection connection = Connect.getConnection();
 		if (connection != null && !connection.isClosed())
 			connection.close();
 	}
@@ -192,8 +193,50 @@ public class GameExecutor implements Runnable {
 	
 	// run of multi player game
 	private void mRun() {
-		Thread thread = new Thread(run, new MultiPlayerGame(gui, state, DEPLOY_ARRAY, run));
+		 // if there is no connection return
+		if (connection == null) return;
+		
+		 // if connection failed display communicate and return
+		if (!connection.connected()) {
+			gui.message(12);
+			return;
+		}
+		
+		Thread thread = new Thread(run, new MultiPlayerGame(gui, state, DEPLOY_ARRAY, connection, run));
 		thread.start();
+	}
+	
+	// enables player to establish connection using Connection Window
+	// sets connection value after player has successfully connected or closed window
+	private void establishConnection() {
+		gui.message(10); // if user exits
+
+		// Connect
+		Thread thread = new Thread(new Connect(gui));
+		thread.start();
+		
+		try {
+			thread.join();
+		} catch (Exception e) {
+			return;
+		}
+		
+		connection = Connect.getConnection(); // after Connect has finished
+	}
+	
+	// enables communication between players through Messenger
+	private void enableCommunication() {
+		 // if there is no connection return
+		if (connection == null) return;
+		
+		 // if connection failed display communicate and return
+		if (!connection.connected()) {
+			gui.message(12);
+			return;
+		}
+		
+		Thread communication = new Thread(new Communication(gui, connection));
+		communication.start();
 	}
 	
 }

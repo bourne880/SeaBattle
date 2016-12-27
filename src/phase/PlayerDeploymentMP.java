@@ -1,8 +1,12 @@
 package phase;
 
+import element.DeployerCMP;
+import element.DeployerRMP;
 import game.Connection;
 import game.GameState;
 import gui.GUI;
+
+import java.util.ArrayList;
 
 // deployment of ships by player
 public class PlayerDeploymentMP extends PlayerDeployment {
@@ -12,6 +16,11 @@ public class PlayerDeploymentMP extends PlayerDeployment {
 		super(aGUI, aState, anArray, parentTG);
 		connection = aConnection;
 		playerDeploy = new ThreadGroup(parentTG, "PlayerDeploymentMP");
+	}
+	
+	protected void threadsDeclaration(ArrayList<Integer> deployList) {
+		rolloverT = new Thread(playerDeploy, new DeployerRMP(pBoard, state, deployList, connection));
+		clickT = new Thread(playerDeploy, new DeployerCMP(pBoard, state, deployList, connection));
 	}
 		
 	// send data about player's deployment of ships to friend

@@ -33,6 +33,10 @@ public class Communication implements Runnable {
 				messageTemp = messenger.getMessage(); // update messageTemp
 				connection.setSend('m', messageTemp); // add message to send queue
 				messenger.displayMessage(false, messageTemp); // display message
+				
+				// to prevent situation when player can't send again the same message
+				messenger.setMessage("");
+				messageTemp = messenger.getMessage();
 			}
 			else if (!receivedMTempTest()) { // handling of received messages
 				LinkedList<String> receivedM = connection.getReceivedM();

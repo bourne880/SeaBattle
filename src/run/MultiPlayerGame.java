@@ -2,8 +2,6 @@ package run;
 
 import javax.swing.JOptionPane;
 
-import game.Communication;
-import game.Connect;
 import game.Connection;
 import game.GameState;
 import gui.GUI;
@@ -11,8 +9,7 @@ import phase.EnemyDeployment;
 import phase.MPGameplay;
 import phase.PlayerDeploymentMP;
 
-// tries to establish connection, if unsuccessful returns
-// then enables communication and runs through phases that make up multi player game
+// runs through phases that make up multi player game
 public class MultiPlayerGame implements Runnable {
 	private GUI gui;
 	private GameState state;
@@ -20,23 +17,15 @@ public class MultiPlayerGame implements Runnable {
 	private Connection connection;
 	private ThreadGroup multiPlayer;
 	
-	public MultiPlayerGame(GUI aGUI, GameState aState, Integer[] aDeployArray, ThreadGroup parentTG) {
+	public MultiPlayerGame(GUI aGUI, GameState aState, Integer[] aDeployArray, Connection aConnection, ThreadGroup parentTG) {
 		gui = aGUI;
 		state = aState;
 		deployArray = aDeployArray;
+		connection = aConnection;
 		multiPlayer = new ThreadGroup(parentTG, "MultiPlayer");
 	}
 	
 	public void run() {
-		
-		establishConnection(); // player establishes connection or return
-		
-		if (connection == null || !connection.connected()) // if there is no connection return
-			return;
-		
-		// enables Communication
-		Thread communication = new Thread(multiPlayer, new Communication(gui, connection));
-		communication.start();
 		
 		 // player and enemy deployment
 		deployment();
@@ -50,7 +39,7 @@ public class MultiPlayerGame implements Runnable {
 	
 	// starts thread with task given runnable, and doesn't move forward until thread is terminated
 	private void runThread(Runnable r) {
-		if (Thread.interrupted() || (connection != null && connection.isClosed())) {
+		if (Thread.interrupted() || connection.isClosed()) {
 			Thread.currentThread().interrupt();
 			return;
 		}
@@ -65,18 +54,7 @@ public class MultiPlayerGame implements Runnable {
 			return;
 		}
 	}
-	
-	// player establishes connection or return
-	private void establishConnection() {
-		gui.message(10); // if user exits
-
-		// Connect
-		Runnable connect = new Connect(gui, multiPlayer);
-		runThread(connect);
 		
-		connection = Connect.getConnection(); // after connect has finished
-	}
-	
 	// player and enemy deployment, the order dependent on result of mutualDraw
 	private void deployment() {
 		Runnable playerDeploymentMP = new PlayerDeploymentMP(gui, state, deployArray, connection, multiPlayer);
@@ -95,10 +73,12 @@ public class MultiPlayerGame implements Runnable {
 	// player and friend send random number to themselves
 	// based on relation between these numbers, the boolean is returned
 	private boolean mutualDraw() {
+		gui.message(12); // message to player about a draw
+		
 		boolean result = false;
 		int iteration = 0;
 		
-		while (!Thread.currentThread().isInterrupted()) {
+		while (!Thread.currentThread().isInterrupted() && !connection.isClosed()) {
 			// detecting if connected to the same computer
 			if (++iteration == 10) {
 				JOptionPane.showMessageDialog(null, "You can't connect to the same computer!");
@@ -109,7 +89,7 @@ public class MultiPlayerGame implements Runnable {
 			int friendNumber = 0;
 			connection.setSend('g', myNumber);
 			
-			while (!Thread.currentThread().isInterrupted())
+			while (!Thread.currentThread().isInterrupted() && !connection.isClosed())
 				if (connection.getReceived().size() > 0) {
 					friendNumber = (int) connection.getReceived().remove();
 					break;
@@ -145,7 +125,7 @@ public class MultiPlayerGame implements Runnable {
 			
 			 // if connection is broken (friend's action), display player message
 			if (connection.isClosed())
-				gui.message(12);
+				gui.message(13);
 		}
 	}
 }

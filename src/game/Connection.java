@@ -21,6 +21,7 @@ public class Connection {
 	
 	private long pingTime; // time of last ping or read
 	private long pingNumber; // randomly generated number used in Ping action
+	private long previousNumber; // keeps record of previous pingNumber
 	private boolean pingResult; // result of Ping action
 	private boolean connected; // true if connection was established
 	
@@ -32,8 +33,8 @@ public class Connection {
 	
 	private static final boolean TESTING = false; // if set to true, will print communicates about exceptions
 	
-	public Connection(int playerTCP, String friendIP, int friendTCP, ThreadGroup parentTG) {
-		connection = new ThreadGroup(parentTG, "Connection");
+	public Connection(int playerTCP, String friendIP, int friendTCP) {
+		connection = new ThreadGroup("Connection");
 		
 		Thread server = new Thread(connection, new Server(playerTCP));
 		server.start();
@@ -92,7 +93,7 @@ public class Connection {
 			Object readco, category, object;
 				
 			try {
-				 // reads object being array of two objects and decomposes it
+				// reads object being array of two objects and decomposes it
 				// first of type char is category, second is actual object
 				// then adds actual object to proper queue or performs action for test
 				while ((readco = in.readObject()) != null) {
@@ -106,8 +107,10 @@ public class Connection {
 					else if ((char) category == 'm') // m for messages
 						receivedM.add((String) object);
 					else if ((char) category == 't') { // t for test
+						
 						if (pingNumber == (long) object)
 							pingResult = true; // if it is what I send, set pingResult to true
+						else if (previousNumber == (long) object) { } // second ping attempt, prevents infinite loop
 						else
 							setSend('t', object); // otherwise it should be friend's, so send it back
 					}
@@ -176,11 +179,18 @@ public class Connection {
 		public void run() {
 			Thread pingT = new Thread(connection, new Ping());
 			if (!Thread.currentThread().isInterrupted()) pingT.start();
+						
+			int wait = 0;
 			
-			try {
-				Thread.sleep(1000);
-			} catch (Exception ex) {
-				Thread.currentThread().interrupt();
+			// in case ping makes second attempt, wait more (as in Ping)
+			while (!Thread.currentThread().isInterrupted() && !pingResult && wait < 2) {				
+				try {
+					Thread.sleep(1000 + wait * 2000); // at second attempt waits 3 sec
+				} catch (Exception ex) {
+					Thread.currentThread().interrupt();
+				}
+				
+				wait++;
 			}
 			
 			if (pingResult)
@@ -188,9 +198,10 @@ public class Connection {
 		}
 	}
 	
-	// if nothing was read for last 5 sec, performs a test
-	// enqueues on send pingNumber and waits 1 sec
-	// if pingResult is false (pingNumber was not received back), closes connection
+	// if nothing was read for 1 sec since last ping, performs a ping
+	// enqueues on send pingNumber, waits, then checks if pingNumber was received back (pingResult)
+	// if not, makes second attempt
+	// if second attempt fails, closes connection
 	private class Ping implements Runnable {
 		public Ping() {
 			pingTime = System.currentTimeMillis() - 5000;
@@ -198,17 +209,26 @@ public class Connection {
 		
 		public void run() {
 			while (!Thread.interrupted())
-				if (System.currentTimeMillis() - pingTime > 5000) {
+				if (System.currentTimeMillis() - pingTime > 1000) {					
+					int attempt = 0;
 					pingResult = false; // assuming negative result, it should be changed in Server: read
-					pingNumber = (long) (Math.random() * 1000000);
-					setSend('t', pingNumber);
 					
-					try {
-						Thread.sleep(1000);
-					} catch (Exception ex) {
-						Thread.currentThread().interrupt();
+					// performs test, if pingResult is negative after first attempt, makes second
+					while (!Thread.currentThread().isInterrupted() && !pingResult && attempt < 2) {
+						previousNumber = pingNumber; // keeps record of previous pingNumber
+						pingNumber = (long) (Math.random() * 1000000);
+						setSend('t', pingNumber);
+						
+						try {
+							Thread.sleep(1000 + attempt * 2000); // at second attempt waits 3 sec
+						} catch (Exception ex) {
+							Thread.currentThread().interrupt();
+						}
+						
+						attempt++;
 					}
-					
+						
+					// if pingResult negative, closes connection
 					if (!pingResult)
 						close();
 					
@@ -234,7 +254,7 @@ public class Connection {
 	// enqueues on send array of 2 objects given:
 	// category object ('g' - game related, 'm' - message, 't' - test)
 	// and actual object o
-	public void setSend(char category, Object object) {
+	public synchronized void setSend(char category, Object object) {
 		Object[] co = new Object[2];
 		co[0] = category;
 		co[1] = object;

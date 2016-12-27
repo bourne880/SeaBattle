@@ -12,9 +12,11 @@ import java.util.Arrays;
 // deployment of ships by player
 public class PlayerDeployment implements Runnable {
 	private GUI gui;
-	private PlayerBoard pBoard;
+	protected PlayerBoard pBoard;
 	protected GameState state;
 	private Integer[] deployArray;
+	protected Thread rolloverT; // listens to player's rollover moves and displays ship position accordingly
+	protected Thread clickT; // listens to player's click moves and deploys
 	protected ThreadGroup playerDeploy;
 	
 	public PlayerDeployment(GUI aGUI, GameState aState, Integer[] anArray, ThreadGroup parentTG) {
@@ -34,14 +36,13 @@ public class PlayerDeployment implements Runnable {
 		pBoard.enableRollover(true); // needs rollover listener
 		pBoard.enableBoard(true); // enable player board
 		
-		Thread thread1 = new Thread(playerDeploy, new DeployerR(pBoard, state, deployList));
-		Thread thread2 = new Thread(playerDeploy, new DeployerC(pBoard, state, deployList));
+		threadsDeclaration(deployList);
 			
-		thread1.start(); // listens to player's rollover moves and displays ship position accordingly
-		thread2.start(); // listens to player's click moves and deploys
+		rolloverT.start();
+		clickT.start();
 			
 		try {
-			thread2.join();
+			clickT.join();
 		} catch (Exception e) {
 			Thread.currentThread().interrupt();
 			return;
@@ -60,6 +61,11 @@ public class PlayerDeployment implements Runnable {
 		pBoard.enableRollover(false); // turns off rollover listener
 		pBoard.enableBoard(false); // disable player board
 			
+	}
+	
+	protected void threadsDeclaration(ArrayList<Integer> deployList) {
+		rolloverT = new Thread(playerDeploy, new DeployerR(pBoard, state, deployList));
+		clickT = new Thread(playerDeploy, new DeployerC(pBoard, state, deployList));
 	}
 	
 	// no optional action
