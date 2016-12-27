@@ -1,7 +1,7 @@
 package element;
 
 import game.GameState;
-import gui.Board;
+import gui.EnemyBoard;
 import gui.GUI;
 
 import java.awt.Color;
@@ -11,14 +11,14 @@ import java.util.ArrayList;
 public class PlayerMove implements Runnable {
 	private GUI gui;
 	protected GameState state;
-	private Board eBoard;
+	private EnemyBoard eBoard;
 	private int keyCTemp;
 	private int key;
 	
 	public PlayerMove(GUI aGUI, GameState aState) {
 		gui = aGUI;
 		state = aState;
-		eBoard = gui.getEBoard();
+		eBoard = gui.getEBoard();		
 		keyCTemp = eBoard.getKeyC();
 	}
 	
@@ -66,6 +66,10 @@ public class PlayerMove implements Runnable {
 		sleep();
 		
 		eBoard.enableBoard(false);
+		
+		// to prevent square blocking if player clicked another square after making a move
+		if (!state.getPlayerMoves().isEmpty())
+			eBoard.setKeyC(state.getPlayerMoves().get(state.getPlayerMoves().size() - 1));
 	}
 	
 	// returns true/false whether click position differs from recent (did player made a click move)

@@ -13,13 +13,11 @@ public class Connect implements Runnable {
 	private static Connection connection;
 	private ConnectionWindow window;
 	private boolean actionTemp; // recent action value
-	private ThreadGroup parentTG;
 
-	public Connect(GUI gui, ThreadGroup aParentTG) {
+	public Connect(GUI gui) {
 		time = 0;
 		connection = null;
 		window = gui.getCWindow();
-		parentTG = aParentTG;
 	}
 	
 	public void run() {		
@@ -32,7 +30,7 @@ public class Connect implements Runnable {
 				Thread.currentThread().interrupt();
 			}
 			else if (!actionTempTest() && window.getAction()) { // player clicks connect, after validation
-				connection = new Connection(window.getPlayerTCP(), window.getFriendIP(), window.getFriendTCP(), parentTG);
+				connection = new Connection(window.getPlayerTCP(), window.getFriendIP(), window.getFriendTCP());
 				time = System.currentTimeMillis();
 				actionTemp = window.getAction();
 			}
@@ -47,8 +45,8 @@ public class Connect implements Runnable {
 			else if (time != 0 && System.currentTimeMillis() - time >= 60000) { // 60 sec limit for trying, auto cancel
 				window.clickCancel();
 			}
-			else if (window.isClosed() && connection != null) { // player closes window
-				connection.close();
+			else if (window.isClosed()) { // player closes window
+				if (connection != null) connection.close();
 				connection = null;
 				window = null;
 				Thread.currentThread().interrupt();

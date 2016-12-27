@@ -102,6 +102,10 @@ public class Messenger extends JPanel {
 		return message;
 	}
 	
+	public void setMessage(String text) {
+		message = text;
+	}
+	
 	// given boolean (true for opponent, false for player) and message, displays message in messageArea
 	public void displayMessage(boolean opponent, String message) {
 		String author;

@@ -12,6 +12,10 @@ public class EnemyBoard extends Board {
 		super(aLText);
 	}
 	
+	public void setKeyC(int key) {
+		keyC = key;
+	}
+	
 	// no button listener
 	protected void buttonClicked(MouseEvent event) { }
 

@@ -54,8 +54,11 @@ public class MessageBox extends JPanel {
 		JLabel label11 = new JLabel("There was a connection error. Choose action from the menu bar.");
 		bPanel.add(label11, "11");
 		
-		JLabel label12 = new JLabel("Friend starts a new game or exited game.");
+		JLabel label12 = new JLabel("The starting player is being drawn.");
 		bPanel.add(label12, "12");
+		
+		JLabel label13 = new JLabel("Friend starts a new game or exited game.");
+		bPanel.add(label13, "13");
 			
 		this.add(bPanel);		
 	}
